@@ -190,11 +190,12 @@ class Game:
                 if event.key == pg.K_d:
                     self.states[3] = False
             if event.type == pg.MOUSEBUTTONDOWN:
+                'LEFT CLICK STUFF'
                 if event.button == 1:
-                    #self.commands = self.info_box.get_clicked(event,(self.mouse_pos[0],self.mouse_pos[1]))
                     if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-450):
-                        pass#if theres a box and we click inside it
-                    else: #if we click in a valid spot
+                        #if theres a box and we click inside it
+                        self.info_box.clicked(self.mouse_pos)
+                    else: #if we click in a valid spot in the background
                         self.draw_box = False
                         for sprite in self.ally_ships:
                             sprite.selected = False

@@ -161,8 +161,8 @@ class ship(pg.sprite.Sprite):
         self.destx = x
         self.desty= y
         self.id = id
-        self.task = 'IGNORE'
-        self.state = 'idle'
+        self.task = 'IGNORE' #what its goal is
+        self.state = 'idle' #what its currently doing
         self.type = game.image_surf
         self.rclick_moving = False
         '''end of ship variables'''
