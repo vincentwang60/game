@@ -1,38 +1,19 @@
 import pygame as pg
 import os
 import numpy as np
-import math
 from os import path
 from settings import *
 from sprites import *
 from map import *
 from camera import *
 from info_box import *
+from ship_mngr import *
 
-def move_formation(number,separation,destx,desty): #produces a list of destination coordinates based on separation
-    targets = []
-    square = math.ceil(number**0.5-0.01) #side length of square is square root of the number. ex. 4->2,10->4,15->4
-    if square % 2 == 0: #even, then half separation for first round
-        for x in range(square):
-            for y in range(square):
-                if len(targets)<number:
-                    targets.append(tuple((destx - (square/2 - 0.5)*separation+x*separation,desty - (square/2-0.5)*separation+y*separation)))
-                else:
-                    return targets
-    else: #odd, then normal center
-        for x in range(square):
-            for y in range(square):
-                if len(targets)<number:
-                    targets.append(tuple((destx - (square/2 - 0.5)*separation+x*separation,desty - (square/2-0.5)*separation+y*separation)))
-                else:
-                    return targets
-    return targets
 
-def attacking(attack_ships,target_ships):
-    pass
 
 class Game:
     def __init__(self):
+        'DONT TOUCH'
         pg.init()
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0,0)
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -42,6 +23,7 @@ class Game:
         self.load_data()
         self.font_name = pg.font.match_font(FONT_NAME)
         self.mouse_pos = pg.mouse.get_pos()
+
         'game variables'
         self.selecting = False
         self.paused = False
@@ -50,14 +32,13 @@ class Game:
         self.commands = []
         self.delayed_timer = 0
         self.delayed_timer_max = 20
+        self.states = [False,False,False,False] #contains game variables
 
-        'camera states'
-        self.states = [False,False,False,False] #up, left, down, right
-
-    def load_data(self):
+    def load_data(self): #loads new pngs
         # directories
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder,"sprites")
+
         self.image_surf = pg.image.load(path.join(img_folder,"f1_beam_ship.png")).convert_alpha()
         self.enemy_image_surf = pg.image.load(path.join(img_folder,"f2_beam_ship.png")).convert_alpha()
         self.planet1 = pg.image.load(path.join(img_folder,"planet1.png")).convert_alpha()
@@ -71,7 +52,7 @@ class Game:
         self.planets = [self.planet1,self.planet2,self.planet3,self.planet4,self.planet5,self.planet6]
 
     def new(self):
-        # initialize all variables and do all the setup for a new game
+        #test
         self.all_sprites = pg.sprite.Group()
         self.ui = pg.sprite.Group()
         self.ally_ships = pg.sprite.Group()
@@ -89,10 +70,14 @@ class Game:
         self.bg = bg(self)
         self.camera = camera()
         self.info_box = info_box(self,self.ally_ships)
-        for i in range(int(STAR_DENSITY * MAP_SIZE[0]*MAP_SIZE[1])):
-            star(self)
+        self.ship_mngr = ship_mngr(self)
+        self.ship_mngr.add_fleet(self.ally_ships,True)
+        self.ship_mngr.add_fleet(self.enemy_ships,False)
 
-    def run(self):
+        for i in range(int(STAR_DENSITY * MAP_SIZE[0]*MAP_SIZE[1])):
+            star(self) #does all startup activity, creates groups, stars, background
+
+    def run(self): #main game loop, dont touch
         # game loop - set self.playing = False to end the game
         self.playing = True
         while self.playing:
@@ -102,7 +87,7 @@ class Game:
             self.draw()
 
     def quit(self):
-        pg.quit()
+        pg.quit() #ends game, dont touch
 
     def update(self):
         # update portion of the game loop
@@ -115,22 +100,14 @@ class Game:
             self.selected_area = pg.Rect(-2,-2,-1,-1)
         self.all_sprites.update()
         self.camera.update(self.states)
-        #issue commands & states
-        for ship in self.ally_ships:
-            if ship.selected:
-                pass#self.info_box.set_state(ship.id,ship.state)
-        for command in self.commands:
-            for ship in self.ally_ships:
-                #issue commands
-                if ship.id == command[0]:
-                    ship.task = command[1]
-                    #self.info_box.set_command(ship.id,ship.task)
         #update text after a delay
         if self.delayed_timer < self.delayed_timer_max:
             self.delayed_timer += 1
         else:
             self.info_box.update_text()
             self.delayed_timer = 0
+
+        self.ship_mngr.update()
 
     def draw(self):
         if self.map_view:
@@ -190,31 +167,20 @@ class Game:
                 if event.key == pg.K_d:
                     self.states[3] = False
             if event.type == pg.MOUSEBUTTONDOWN:
-                'LEFT CLICK STUFF'
+                'LEFT CLICK'
                 if event.button == 1:
+                    #if theres a box and we click inside it
                     if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-450):
-                        #if theres a box and we click inside it
-                        self.info_box.clicked(self.mouse_pos)
+                        self.info_box.clicked(self.mouse_pos) #tell info box where we clicked
                     else: #if we click in a valid spot in the background
                         self.draw_box = False
                         for sprite in self.ally_ships:
                             sprite.selected = False
                         self.selecting = True
                         self.box.set_start(self.mouse_pos[0],self.mouse_pos[1])
+                'RIGHT CLICK'
                 if event.button == 3: #move command
-                    gen = (x for x in self.ally_ships if x.selected)
-                    selected = []
-                    number_selected = 0
-                    for x in gen:
-                        number_selected+=1
-                        selected.append(x)
-                    targets = move_formation(number_selected,30,self.mouse_pos[0],self.mouse_pos[1])
-                    counter = 0
-                    for sprite in selected:
-                        target = targets[counter]
-                        target = self.camera.apply_point(targets[counter])
-                        sprite.set_dest(target)
-                        counter+=1
+                    self.ship_mngr.r_click(self.mouse_pos)
             if event.type == pg.MOUSEBUTTONUP:
                 if event.button == 1:
                     if self.selecting:

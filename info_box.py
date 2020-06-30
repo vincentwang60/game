@@ -29,12 +29,10 @@ class info_box(pg.sprite.Sprite):
 
         'VARIABLES'
         self.ships = []
-        self.length = 0 #length of ships
         self.x = 0
         self.w = 600
         self.h = 450
         self.y = HEIGHT - self.h
-        self.total_h = 80 * self.length
         self.rect = pg.Rect(self.x,self.y,self.w,self.h)
         self.image = pg.Surface((self.rect.w,self.rect.h))
         pg.draw.rect(self.image,DARKGREY,pg.Rect(self.x,0,self.w,self.h),2) #draw ship outline box
@@ -44,12 +42,12 @@ class info_box(pg.sprite.Sprite):
         'END OF VARIABLEs'
 
         for ship in ship_list:
-            self.ships.append(ship)
             if ship.selected:
-                self.length += 1
+                self.ships.append(ship)
 
+        self.total_h = 80 * len(self.ships)
         #STATIC DRAWINGS (outline boxes, ship images, buttons) THIS WILL ONLY UPDATE WITH A NEW SHIP ADDITION
-        for i in range(self.length):
+        for i in range(len(self.ships)):
             pg.draw.rect(self.image,BLUE3,pg.Rect(8,8+80*i,68,68),2) #draw ship outline box
             pg.draw.rect(self.image,DARKBLUE,pg.Rect(10,10+80*i,65,65)) #draw ship outline background
             pg.draw.rect(self.image,BLUE3,pg.Rect(88,8+80*i,482,68),2) #draw info outline box
@@ -85,7 +83,7 @@ class info_box(pg.sprite.Sprite):
                         print("after: ",ship.task)
 
     def update_text(self):
-        for i in range(self.length-1):
+        for i in range(len(self.ships)):
             filler = ""
             while len(self.ships[i].task) + len(filler) < 10:
                 filler += ' '
