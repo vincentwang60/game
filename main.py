@@ -7,6 +7,7 @@ from settings import *
 from sprites import *
 from map import *
 from camera import *
+from info_box import *
 
 def move_formation(number,separation,destx,desty): #produces a list of destination coordinates based on separation
     targets = []
@@ -47,6 +48,8 @@ class Game:
         self.map_view = False
         self.draw_box = False
         self.commands = []
+        self.delayed_timer = 0
+        self.delayed_timer_max = 20
 
         'camera states'
         self.states = [False,False,False,False] #up, left, down, right
@@ -85,7 +88,7 @@ class Game:
         self.map = g_map(self)
         self.bg = bg(self)
         self.camera = camera()
-        self.info_box = info_box(self)
+        self.info_box = info_box(self,self.ally_ships)
         for i in range(int(STAR_DENSITY * MAP_SIZE[0]*MAP_SIZE[1])):
             star(self)
 
@@ -112,17 +115,22 @@ class Game:
             self.selected_area = pg.Rect(-2,-2,-1,-1)
         self.all_sprites.update()
         self.camera.update(self.states)
-
         #issue commands & states
         for ship in self.ally_ships:
             if ship.selected:
-                self.info_box.set_state(ship.id,ship.state)
+                pass#self.info_box.set_state(ship.id,ship.state)
         for command in self.commands:
             for ship in self.ally_ships:
                 #issue commands
                 if ship.id == command[0]:
                     ship.task = command[1]
-                    self.info_box.set_command(ship.id,ship.task)
+                    #self.info_box.set_command(ship.id,ship.task)
+        #update text after a delay
+        if self.delayed_timer < self.delayed_timer_max:
+            self.delayed_timer += 1
+        else:
+            self.info_box.update_text()
+            self.delayed_timer = 0
 
     def draw(self):
         if self.map_view:
@@ -149,7 +157,7 @@ class Game:
         self.ui.draw(self.screen)
         if self.draw_box:
             self.screen.blit(self.info_box.image,(self.info_box.x,self.info_box.y))
-        self.draw_text(self.screen,str(self.camera.state),200,100,WHITE,30) #TEXT TEXT TEXT
+        self.draw_text(self.screen,str(self.draw_box),200,100,WHITE,30) #TEXT TEXT TEXT
         pg.display.flip()
 
     def events(self):
@@ -183,10 +191,11 @@ class Game:
                     self.states[3] = False
             if event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    self.commands = self.info_box.get_clicked(event,(self.mouse_pos[0],self.mouse_pos[1]))
+                    #self.commands = self.info_box.get_clicked(event,(self.mouse_pos[0],self.mouse_pos[1]))
                     if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-450):
-                        pass
-                    else: #create select box
+                        pass#if theres a box and we click inside it
+                    else: #if we click in a valid spot
+                        self.draw_box = False
                         for sprite in self.ally_ships:
                             sprite.selected = False
                         self.selecting = True
@@ -210,10 +219,11 @@ class Game:
                     if self.selecting:
                         self.selecting = False
                         #once the box is finalized, make the info_box
-                        self.draw_box = True
-                        self.info_box.wipe()
+                        self.info_box = info_box(self,self.ally_ships)
+                        if any(ship.selected for ship in self.ally_ships):
+                            self.draw_box = True
                         for ship in self.ally_ships:
-                            self.info_box.add_ship(ship)
+                            pass#self.info_box.add_ship(ship)
                         self.box.set_start(2000,2000)
 
     def start_screen(self):
