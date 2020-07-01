@@ -8,8 +8,7 @@ from map import *
 from camera import *
 from info_box import *
 from ship_mngr import *
-
-
+from spritesheet import *
 
 class Game:
     def __init__(self):
@@ -49,7 +48,11 @@ class Game:
         self.planet6 = pg.image.load(path.join(img_folder,"planet6.png")).convert_alpha()
         self.star_surf = pg.image.load(path.join(img_folder,"star.png")).convert_alpha()
         self.buttons = pg.image.load(path.join(img_folder,"buttons.png")).convert_alpha()
+        self.top_buttons = pg.image.load(path.join(img_folder,"top_buttons.png")).convert_alpha()
         self.planets = [self.planet1,self.planet2,self.planet3,self.planet4,self.planet5,self.planet6]
+
+        ss = spritesheet(path.join(img_folder,"explosion.png"))
+        self.explosion = ss.load_strip(pg.Rect(0,0,100,100),24,BLUE)
 
     def new(self):
         #test
@@ -64,7 +67,8 @@ class Game:
 
         for i in range(20):
             self.s = ship(self,200+20*i,200,i+200)
-        enemy_ship(self,1050,150)
+        for i in range(20):
+            self.s = enemy_ship(self,200+20*i,600,i+200)
         self.box = select_box(self)
         self.map = g_map(self)
         self.bg = bg(self)
@@ -106,7 +110,17 @@ class Game:
         else:
             self.info_box.update_text()
             self.delayed_timer = 0
-
+        for ship in self.enemy_ships:
+            if ship.alive == 'dying' and not ship.killed:
+                ship.killed = True
+                self.all_sprites.remove(ship.health_bar)
+                self.health_bar.remove(ship.health_bar)
+                #del ship.health_bar
+            if ship.alive == 'dead':
+                self.all_sprites.remove(ship)
+                self.enemy_ships.remove(ship)
+                del ship
+                self.ship_mngr.refresh_ships(self.ally_ships,self.enemy_ships)
         self.ship_mngr.update()
 
     def draw(self):
@@ -131,11 +145,23 @@ class Game:
             self.map_group.draw(self.screen)
         for i in self.health_bar:
             self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
+
+        #DRAW LASERS
+        for ship in self.ally_ships:
+            if ship.task == 'ATTACK' and ship.in_range:
+                info = ship.fire()
+                if info !=False: #if it's firing
+                    for enemy_ship in self.enemy_ships:
+                        if enemy_ship.id == info[1]:
+                            enemy_ship.damage(info[0],'beam')
+                    pg.draw.line(self.screen,RED,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
+        #DRAWS UI
         self.ui.draw(self.screen)
         if self.draw_box:
             self.screen.blit(self.info_box.image,(self.info_box.x,self.info_box.y))
         self.draw_text(self.screen,str(self.draw_box),200,100,WHITE,30) #TEXT TEXT TEXT
         pg.display.flip()
+
 
     def events(self):
         # catch all events here
@@ -170,7 +196,7 @@ class Game:
                 'LEFT CLICK'
                 if event.button == 1:
                     #if theres a box and we click inside it
-                    if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-450):
+                    if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-498):
                         self.info_box.clicked(self.mouse_pos) #tell info box where we clicked
                     else: #if we click in a valid spot in the background
                         self.draw_box = False
@@ -178,6 +204,7 @@ class Game:
                             sprite.selected = False
                         self.selecting = True
                         self.box.set_start(self.mouse_pos[0],self.mouse_pos[1])
+                    self.ship_mngr.l_click(self.mouse_pos)
                 'RIGHT CLICK'
                 if event.button == 3: #move command
                     self.ship_mngr.r_click(self.mouse_pos)

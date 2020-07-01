@@ -111,11 +111,19 @@ class health_bar(pg.sprite.Sprite):
         self.max_health = [100,100,100]
         self.health = [100,60,40]
 
+    def __del__(self):
+        self.image = pg.Surface((1,1))
+        self.image.fill(BLACK)
+
     def update(self):
         #draw grey background of bar
         temp = pg.Surface((63,5*self.bars+1))
         temp.fill(LIGHTGREY)
         self.image.blit(temp,(2,2))
+        #makes sure health isn't negative
+        for health in self.health:
+            if health < 0:
+                health = 0
 
         #draw health bars
         for i in range(self.bars):
@@ -123,13 +131,18 @@ class health_bar(pg.sprite.Sprite):
         temp = pg.Surface((self.health_rects[0].w,self.health_rects[0].h))
         temp.fill((65,105,225))
         self.image.blit(temp,(2,2))
-        temp = pg.Surface((self.health_rects[1].w,self.health_rects[1].h))
-        temp.fill((255,215,0))
-        self.image.blit(temp,(2,2+6))
         if self.bars == 3:
             temp = pg.Surface((self.health_rects[2].w,self.health_rects[2].h))
             temp.fill(RED)
+            self.image.blit(temp,(2,2+6))
+
+            temp = pg.Surface((self.health_rects[1].w,self.health_rects[1].h))
+            temp.fill((255,215,0))
             self.image.blit(temp,(2,2+6*2))
+        else:
+            temp = pg.Surface((self.health_rects[1].w,self.health_rects[1].h))
+            temp.fill((255,215,0))
+            self.image.blit(temp,(2,2+6))
 
 
         #draw grid of bar
@@ -150,6 +163,10 @@ class ship(pg.sprite.Sprite):
     def __init__(self, game, x, y,id):
         '''ship variables'''
         self.selected = False
+        self.in_range = False
+        self.rclick_moving = False
+        self.killed = False
+
         self.angle = 0
         self.x = x
         self.y = y
@@ -161,10 +178,17 @@ class ship(pg.sprite.Sprite):
         self.destx = x
         self.desty= y
         self.id = id
+        self.reload_delay = 50
+        self.reload_tick = 0
+        self.range = 500
+        self.damage = 5
+        self.dying_tick = 0
+
         self.task = 'IGNORE' #what its goal is
-        self.state = 'idle' #what its currently doing
+        self.state = 'Idle' #what its currently doing
         self.type = game.image_surf
-        self.rclick_moving = False
+        self.attack_target_pos = [0,0]
+        self.alive = True
         '''end of ship variables'''
 
         self.groups = [game.ally_ships,game.all_sprites]
@@ -178,6 +202,32 @@ class ship(pg.sprite.Sprite):
 
         self.health_bar = health_bar(self.game,self.x,self.y,2)
 
+    def damage(self,dmg,dmg_type):
+        if not self.game.paused:
+            if self.health_bar.health[0]>0: #shields
+                self.health_bar.health[0] -= 2*dmg
+            elif self.health_bar.health[1]>0:
+                self.health_bar.health[1] -= dmg
+            elif self.health_bar.health[2]>0:
+                self.health_bar.health[2] -= dmg
+            if self.health_bar.health[1] <= 0:
+                self.kill()
+
+
+    def fire(self):
+        if self.reload_tick == self.reload_delay: #fire if not reloading
+            if not self.game.paused:
+                self.reload_tick = 0
+            #if firing, return damage and target
+            return [self.damage,self.attack_target]
+        elif self.reload_tick > self.reload_delay - BEAM_DURATION:
+            self.reload_tick += 1
+            return [0,self.attack_target]
+        else:
+            if not self.game.paused:
+                self.reload_tick += 1
+            return False
+
     def resize(self):
         if (self.scale < 5 and self.dscale > 0) or (self.scale > 0.5 and self.dscale < 0):
             self.scale += self.dscale
@@ -188,7 +238,6 @@ class ship(pg.sprite.Sprite):
 
     def move(self, dx=0, dy=0):
         if abs(self.x-self.destx) > 10 or abs(self.y-self.desty)>10: #if unsatisfied with position
-            self.state = 'moving'
             while self.target_angle >= 180:
                 self.target_angle -= 360
             while self.target_angle <= -180:
@@ -196,8 +245,8 @@ class ship(pg.sprite.Sprite):
             self.x += self.vel*self.game.dt*np.cos(np.pi*self.angle/180)
             self.y += -self.vel*self.game.dt*np.sin(np.pi*self.angle/180)
             self.target_angle = self.get_target_angle()
-        else:
-            self.state = 'idle'
+        elif self.task != 'ATTACK' or self.state == 'Moving to position':
+            self.state = 'Idle'
 
         if abs(self.target_angle-self.angle)>5: #unsatisfied with angle
             while self.angle >= 180:
@@ -242,6 +291,9 @@ class ship(pg.sprite.Sprite):
     def make_line(self,color=(255,0,0)):
         return [(self.x,self.y),(self.destx,self.desty)]
 
+    def set_target_angle(self,target):
+        self.target_angle = -(np.arctan2(target[1]-self.y, target[0]-self.x) * 180 / np.pi)
+
     def set_dest(self,dest):
         self.destx = dest[0]
         self.desty= dest[1]
@@ -252,25 +304,41 @@ class ship(pg.sprite.Sprite):
         else:
             self.selected = False
         return self.selected
+
+    def kill(self):
+        self.alive = 'dying'
+        self.rect = pg.Rect(0,0,100,100)
+        self.image = self.game.explosion[0]
+
     def update(self):
-        if not self.game.paused:
-            self.move()
-        self.resize()
-        self.image = pg.transform.rotate(self.image,self.angle)
         self.rect = self.image.get_rect()
         self.rect.center = self.image.get_rect().center
         self.rect.centerx = self.x
         self.rect.centery = self.y
-        if self.selected:
-            self.get_outline(YELLOW)
+        #if its dying
+        if self.alive == 'dying':
+            if self.dying_tick < 23:
+                self.dying_tick += 1
+                self.image = self.game.explosion[int(self.dying_tick)]
+            else:
+                self.alive = 'dead'
+                self.dying_tick = 0
+        else:
+            if not self.game.paused:
+                self.move()
+            self.resize()
+            self.image = pg.transform.rotate(self.image,self.angle)
 
-        self.health_bar.x = self.rect.midtop[0]
-        self.health_bar.y = self.rect.midtop[1]
+            if self.selected:
+                self.get_outline(YELLOW)
+            self.health_bar.x = self.rect.midtop[0]
+            self.health_bar.y = self.rect.midtop[1]
 
 class enemy_ship(ship):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y,id):
         '''ship variables'''
         self.selected = False
+        self.killed = False
         self.angle = 0
         self.x = x
         self.y = y
@@ -278,9 +346,13 @@ class enemy_ship(ship):
         self.dscale = 0
         self.vel = 300
         self.target_angle = 10
-        self.rot_speed = 10
+        self.rot_speed = 5
         self.destx = x
         self.desty= y
+        self.task = 'UNKNOWN'
+        self.state = 'UNKNOWN'
+        self.id = id
+        self.dying_tick = 0
         '''end of ship variables'''
 
         self.groups = [game.enemy_ships,game.all_sprites]
