@@ -109,7 +109,7 @@ class health_bar(pg.sprite.Sprite):
         for i in range(bars):
             self.health_rects.append(pg.Rect(2,2+5*i,60,4))
         self.max_health = [100,100,100]
-        self.health = [100,60,40]
+        self.health = [100,100,100]
 
     def __del__(self):
         self.image = pg.Surface((1,1))
@@ -160,7 +160,7 @@ class health_bar(pg.sprite.Sprite):
         self.rect.y = self.y - 20
 
 class ship(pg.sprite.Sprite):
-    def __init__(self, game, x, y,id):
+    def __init__(self, game, x, y,id,img_string):
         '''ship variables'''
         self.selected = False
         self.in_range = False
@@ -170,31 +170,38 @@ class ship(pg.sprite.Sprite):
         self.angle = 0
         self.x = x
         self.y = y
-        self.scale = 0.5
-        self.dscale = 0
         self.vel = 300
         self.target_angle = 1
         self.rot_speed = 10
         self.destx = x
         self.desty= y
         self.id = id
-        self.reload_delay = 50
+        self.reload_delay = 100
         self.reload_tick = 0
-        self.range = 500
-        self.damage = 5
+        self.range = BEAM_RANGE
+        self.dmg = 5
         self.dying_tick = 0
 
         self.task = 'IGNORE' #what its goal is
         self.state = 'Idle' #what its currently doing
-        self.type = game.image_surf
+        if img_string == 'f1_beam': #self. img = original image
+            self.scale = 0.5
+            self.img = game.f1_beam
+            self.groups = [game.ally_ships,game.all_sprites]
+        elif img_string == 'f2_beam':
+            self.scale = 1
+            self.img = game.f2_beam
+            self.groups = [game.enemy_ships,game.all_sprites]
+        elif img_string == 'f1_capital':
+            self.img = game.f1_capital
+            self.groups = [game.ally_ships,game.all_sprites]
         self.attack_target_pos = [0,0]
         self.alive = True
         '''end of ship variables'''
 
-        self.groups = [game.ally_ships,game.all_sprites]
         pg.sprite.Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.transform.rotate(self.game.image_surf,self.angle)
+        self.image = pg.transform.rotate(self.img,self.angle)
         self.rect = self.image.get_rect()
         self.original_width = self.rect.width
         self.original_height = self.rect.height
@@ -206,9 +213,10 @@ class ship(pg.sprite.Sprite):
         if not self.game.paused:
             if self.health_bar.health[0]>0: #shields
                 self.health_bar.health[0] -= 2*dmg
-            elif self.health_bar.health[1]>0:
+            elif self.health_bar.health[1]>0: #hull
                 self.health_bar.health[1] -= dmg
-            elif self.health_bar.health[2]>0:
+                self.health_bar.health[2] -= dmg
+            elif self.health_bar.health[2]>0: #crew
                 self.health_bar.health[2] -= dmg
             if self.health_bar.health[1] <= 0:
                 self.kill()
@@ -219,7 +227,7 @@ class ship(pg.sprite.Sprite):
             if not self.game.paused:
                 self.reload_tick = 0
             #if firing, return damage and target
-            return [self.damage,self.attack_target]
+            return [self.dmg,self.attack_target]
         elif self.reload_tick > self.reload_delay - BEAM_DURATION:
             self.reload_tick += 1
             return [0,self.attack_target]
@@ -229,9 +237,7 @@ class ship(pg.sprite.Sprite):
             return False
 
     def resize(self):
-        if (self.scale < 5 and self.dscale > 0) or (self.scale > 0.5 and self.dscale < 0):
-            self.scale += self.dscale
-        self.image = pg.transform.scale(self.game.image_surf,(int(self.original_width*self.scale),int(self.original_height*self.scale)))
+        self.image = pg.transform.scale(self.img,(int(self.original_width*self.scale),int(self.original_height*self.scale)))
 
     def get_target_angle(self):
         return -(np.arctan2(self.desty-self.y, self.destx-self.x) * 180 / np.pi)
@@ -333,39 +339,3 @@ class ship(pg.sprite.Sprite):
                 self.get_outline(YELLOW)
             self.health_bar.x = self.rect.midtop[0]
             self.health_bar.y = self.rect.midtop[1]
-
-class enemy_ship(ship):
-    def __init__(self, game, x, y,id):
-        '''ship variables'''
-        self.selected = False
-        self.killed = False
-        self.angle = 0
-        self.x = x
-        self.y = y
-        self.scale = 1
-        self.dscale = 0
-        self.vel = 300
-        self.target_angle = 10
-        self.rot_speed = 5
-        self.destx = x
-        self.desty= y
-        self.task = 'UNKNOWN'
-        self.state = 'UNKNOWN'
-        self.id = id
-        self.dying_tick = 0
-        '''end of ship variables'''
-
-        self.groups = [game.enemy_ships,game.all_sprites]
-        pg.sprite.Sprite.__init__(self, self.groups)
-        self.game = game
-        self.image = pg.transform.rotate(self.game.enemy_image_surf,self.angle)
-        self.rect = self.image.get_rect()
-        self.original_width = self.rect.width
-        self.original_height = self.rect.height
-        self.image.set_colorkey(WHITE)
-
-        self.health_bar = health_bar(self.game,self.x,self.y,3)
-    def resize(self):
-        if (self.scale < 5 and self.dscale > 0) or (self.scale > 0.5 and self.dscale < 0):
-            self.scale += self.dscale
-        self.image = pg.transform.scale(self.game.enemy_image_surf,(int(self.original_width*self.scale),int(self.original_height*self.scale)))

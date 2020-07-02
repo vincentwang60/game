@@ -56,7 +56,7 @@ class info_box(pg.sprite.Sprite):
             pg.draw.rect(self.image,DARKBLUE,pg.Rect(10,58+80*i,65,65)) #draw ship outline background
             pg.draw.rect(self.image,BLUE3,pg.Rect(88,56+80*i,482,68),2) #draw info outline box
             pg.draw.rect(self.image,DARKBLUE,pg.Rect(90,58+80*i,479,65)) #draw info outline backgroundd
-            self.image.blit(pg.transform.rotate(self.ships[i].type,90),(10,58+80*i))
+            self.image.blit(pg.transform.rotate(self.ships[i].img,90),(10,58+80*i))
             self.game.draw_text(self.image,str("ID:"+str(self.ships[i].id)),395,63+80*i,WHITE,15)
             self.image.blit(self.button_image,(95,81+80*i))
 
@@ -99,7 +99,6 @@ class info_box(pg.sprite.Sprite):
                     for ship in self.ships:
                         if ship.selected:
                             ship.task = button.type[4:]
-                print(mouse_pos, ", ", button.type)
                 #searches list of ships for id, and sets that ships task to the button effect
                 button_effect = button.clicked()
                 for ship in self.ships:

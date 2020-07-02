@@ -38,8 +38,8 @@ class Game:
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder,"sprites")
 
-        self.image_surf = pg.image.load(path.join(img_folder,"f1_beam_ship.png")).convert_alpha()
-        self.enemy_image_surf = pg.image.load(path.join(img_folder,"f2_beam_ship.png")).convert_alpha()
+        self.f1_beam = pg.image.load(path.join(img_folder,"f1_beam_ship.png")).convert_alpha()
+        self.f2_beam = pg.image.load(path.join(img_folder,"f2_beam_ship.png")).convert_alpha()
         self.planet1 = pg.image.load(path.join(img_folder,"planet1.png")).convert_alpha()
         self.planet2 = pg.image.load(path.join(img_folder,"planet2.png")).convert_alpha()
         self.planet3 = pg.image.load(path.join(img_folder,"planet3.png")).convert_alpha()
@@ -48,6 +48,7 @@ class Game:
         self.planet6 = pg.image.load(path.join(img_folder,"planet6.png")).convert_alpha()
         self.star_surf = pg.image.load(path.join(img_folder,"star.png")).convert_alpha()
         self.buttons = pg.image.load(path.join(img_folder,"buttons.png")).convert_alpha()
+        self.f1_capital = pg.image.load(path.join(img_folder,"f1_capital.png")).convert_alpha()
         self.top_buttons = pg.image.load(path.join(img_folder,"top_buttons.png")).convert_alpha()
         self.planets = [self.planet1,self.planet2,self.planet3,self.planet4,self.planet5,self.planet6]
 
@@ -65,10 +66,10 @@ class Game:
         self.stars = pg.sprite.Group()
         self.health_bar = pg.sprite.Group()
 
-        for i in range(20):
-            self.s = ship(self,200+20*i,200,i+200)
-        for i in range(20):
-            self.s = enemy_ship(self,200+20*i,600,i+200)
+        for i in range(10):
+            self.s = ship(self,200+20*i,200,i+200,'f1_beam')
+        for i in range(10):
+            self.s = ship(self,200+20*i,600,i+200,'f2_beam')
         self.box = select_box(self)
         self.map = g_map(self)
         self.bg = bg(self)
@@ -148,11 +149,12 @@ class Game:
 
         #DRAW LASERS
         for ship in self.ally_ships:
-            if ship.task == 'ATTACK' and ship.in_range:
+            if ship.task == 'ATTACK' and ship.in_range and ship.state != 'Moving to position':
                 info = ship.fire()
                 if info !=False: #if it's firing
                     for enemy_ship in self.enemy_ships:
                         if enemy_ship.id == info[1]:
+                            print(str(info))
                             enemy_ship.damage(info[0],'beam')
                     pg.draw.line(self.screen,RED,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
         #DRAWS UI
@@ -161,7 +163,6 @@ class Game:
             self.screen.blit(self.info_box.image,(self.info_box.x,self.info_box.y))
         self.draw_text(self.screen,str(self.draw_box),200,100,WHITE,30) #TEXT TEXT TEXT
         pg.display.flip()
-
 
     def events(self):
         # catch all events here
@@ -173,6 +174,8 @@ class Game:
                     self.quit()
                 if event.key == pg.K_SPACE:
                     self.paused = not self.paused
+                if event.key == pg.K_l:
+                    self.ship_mngr.print()
                 if event.key == pg.K_m:
                     self.map_view = not self.map_view
                 if event.key == pg.K_a:

@@ -22,6 +22,7 @@ BUTTON_H = 18
 WIDTH = 1920
 HEIGHT = 1080
 SEPARATION = 20 #distance that ships have to stay apart
+BEAM_RANGE = 500
 BEAM_DURATION = 20
 SCROLL_SPEED = 20
 FPS = 60

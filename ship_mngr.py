@@ -14,12 +14,18 @@ class ship_mngr(): #issues move commands to ships
         self.evading = []
         self.ignoring = []
         self.retreating = []
-        self.separation = 450
-        self.close_separation = 300
+        self.separation = BEAM_RANGE -50
+        self.close_separation = BEAM_RANGE/2
 
     def l_click(self,mouse_pos):
         self.make_lists()
 
+    def print(self):
+        output = ''
+        for ship in self.ally_ships:
+            output += str(ship)
+        for ship in self.enemy_ships:
+            output += str(ship)
 
     def make_lists(self):
         self.attacking = (x for x in self.ally_ships if (x.selected and x.task == 'ATTACK')) #list of ships that are selected & attacking
@@ -69,6 +75,7 @@ class ship_mngr(): #issues move commands to ships
             self.enemy_ships.append(ship)
 
     def update(self):
+        random.seed()
         'ENEMY SHIP AI'
         for ship in self.enemy_ships:
             ship.set_dest((ship.x+-50+random.randrange(100),ship.y-50+random.randrange(100)))
@@ -87,37 +94,33 @@ class ship_mngr(): #issues move commands to ships
             if ship.task == 'ATTACK' and ship.state != 'Moving to position': #if ship is attacking and not forced moving, follow the nearest enemy
                 ship.state = 'Moving to target'
                 moving_list.append(ship)
-        targets = self.move_attack_formation(len(moving_list),self.separation/2,self.enemy_ships[0].x,self.enemy_ships[0].y) #make list of target dests
         for i in range(len(moving_list)):
-            target = targets[i]
-            distance = self.distance((moving_list[i].x,moving_list[i].y),(self.enemy_ships[0].x,self.enemy_ships[0].y))
+            target_ship = self.find_closest(moving_list[i])
+            target  = self.move_attack_formation(i,self.separation/2,target_ship.x,target_ship.y) #create targets when attacking
+            distance = self.distance((moving_list[i].x,moving_list[i].y),(target_ship.x,target_ship.y)) #distance from ally ship to enemy
             if distance > moving_list[i].range:
-                moving_list[i].in_range = False
+                moving_list[i].in_range = False #if out of range
             else:
                 moving_list[i].in_range = True
-                moving_list[i].attack_target_pos[0] = self.enemy_ships[0].x#set attack targets
-                moving_list[i].attack_target_pos[1] = self.enemy_ships[0].y
-                moving_list[i].attack_target = self.enemy_ships[0].id
+                moving_list[i].attack_target_pos[0] = target_ship.x#set attack targets
+                moving_list[i].attack_target_pos[1] = target_ship.y
+                moving_list[i].attack_target = target_ship.id
             if distance>self.separation: #if out of range, move within range
                 moving_list[i].state = 'Moving within range'
                 moving_list[i].set_dest(target)
             elif distance < self.close_separation: #if it's too close
                 moving_list[i].state = 'Moving away'
-                moving_list[i].set_dest((moving_list[i].x-(target[0]-moving_list[i].x),moving_list[i].y-(target[1]-moving_list[i].y)))
+                moving_list[i].set_dest((moving_list[i].x-(target_ship.x-moving_list[i].x),moving_list[i].y-(target_ship.y-moving_list[i].y)))
             else: #if it's in its happy place
                 moving_list[i].state = 'Aiming at target'
-                moving_list[i].set_target_angle((self.enemy_ships[0].x,self.enemy_ships[0].y))
+                moving_list[i].set_target_angle((target_ship.x,target_ship.y))
                 moving_list[i].set_dest((moving_list[i].x,moving_list[i].y))
 
-    def move_attack_formation(self,number,separation,destx,desty):
-        targets = []
-        if number == 0:
-            angle = 0
-        else:
-            angle = 360/number
-        for i in range(number): #angles at angle*i
-            targets.append(tuple((destx+separation*np.cos(i*angle),(desty + separation * np.sin(i*angle)))))
-        return targets
+    def move_attack_formation(self,seed,separation,destx,desty):
+        random.seed(seed*1000)
+        angle = -50 + random.randrange(101)
+        print(angle)
+        return tuple((destx+separation*np.cos(angle),(desty + separation * np.sin(angle))))
 
     def move_formation(self,number,separation,destx,desty): #produces a list of destination coordinates based on separation
         targets = []
