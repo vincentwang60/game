@@ -179,10 +179,11 @@ class ship(pg.sprite.Sprite):
         self.reload_delay = 100
         self.reload_tick = 0
         self.range = BEAM_RANGE
-        self.dmg = 50
+        self.dmg = 10
         self.dying_tick = 0
         self.fleet = fleet
         self.leader = leader
+        self.fired = False #keeps track of if its fired for the first time
 
         self.task = 'IGNORE' #what its goal is
         self.state = 'Idle' #what its currently doing
@@ -225,15 +226,17 @@ class ship(pg.sprite.Sprite):
 
 
     def fire(self):
-        if self.reload_tick == self.reload_delay: #fire if not reloading
+        if self.reload_tick == self.reload_delay: #fire if not reloading once it reaches top
+            self.fired = True
             if not self.game.paused:
                 self.reload_tick = 0
             #if firing, return damage and target
             return [self.dmg,self.attack_target]
-        elif self.reload_tick > self.reload_delay - BEAM_DURATION:
+        elif self.reload_tick < BEAM_DURATION and self.fired:
             self.reload_tick += 1
             return [0,self.attack_target]
-        else:
+        else: #if its not drawing its beam, resets fired to false
+            self.fired = False
             if not self.game.paused:
                 self.reload_tick += 1
             return False

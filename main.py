@@ -99,6 +99,21 @@ class Game:
     def quit(self):
         pg.quit() #ends game, dont touch
 
+    def kill_ships(self,group):
+        for ship in group:
+            if ship.alive == 'dying' and not ship.killed:
+                ship.killed = True
+                self.all_sprites.remove(ship.health_bar)
+                self.health_bar.remove(ship.health_bar)
+                #del ship.health_bar
+            if ship.alive == 'dead':
+                self.all_sprites.remove(ship)
+                group.remove(ship)
+                del ship
+                self.ship_mngr.refresh_ships(self.ally_ships,self.enemy_ships)
+                print(len(self.ally_ships))
+                self.info_box = info_box(self,self.ally_ships)
+
     def update(self):
         # update portion of the game loop
         self.mouse_pos = pg.mouse.get_pos()
@@ -116,17 +131,12 @@ class Game:
         else:
             self.info_box.update_text()
             self.delayed_timer = 0
-        for ship in self.enemy_ships:
-            if ship.alive == 'dying' and not ship.killed:
-                ship.killed = True
-                self.all_sprites.remove(ship.health_bar)
-                self.health_bar.remove(ship.health_bar)
-                #del ship.health_bar
-            if ship.alive == 'dead':
-                self.all_sprites.remove(ship)
-                self.enemy_ships.remove(ship)
-                del ship
-                self.ship_mngr.refresh_ships(self.ally_ships,self.enemy_ships)
+
+        #KILL DEAD SHIPS
+        self.kill_ships(self.ally_ships)
+        self.kill_ships(self.enemy_ships)
+
+        self.ship_mngr.refresh_ships(self.ally_ships,self.enemy_ships)
         self.ship_mngr.update()
 
     def draw(self):
@@ -152,16 +162,25 @@ class Game:
         for i in self.health_bar:
             self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
 
-        #DRAW LASERS
+        'DRAW LASERS AND FIRE'
         for ship in self.ally_ships:
             if ship.task == 'ATTACK' and ship.in_range and ship.state != 'Moving to position':
                 info = ship.fire()
                 if info !=False: #if it's firing
                     for enemy_ship in self.enemy_ships:
                         if enemy_ship.id == info[1]:
-                            print(str(info))
                             enemy_ship.damage(info[0],'beam')
                     pg.draw.line(self.screen,RED,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
+        'DRAW ENEMY LASER AND FIRE'
+        for ship in self.enemy_ships:
+            if ship.in_range:
+                info = ship.fire()
+                if info !=False: #if it's firing
+                    for enemy_ship in self.ally_ships:
+                        if enemy_ship.id == info[1]:
+                            enemy_ship.damage(info[0],'beam')
+                    pg.draw.line(self.screen,BLUE,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
+
         #DRAWS UI
         self.ui.draw(self.screen)
         if self.draw_box:

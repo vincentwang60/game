@@ -57,7 +57,7 @@ class info_box(pg.sprite.Sprite):
             pg.draw.rect(self.image,BLUE3,pg.Rect(88,56+80*i,482,68),2) #draw info outline box
             pg.draw.rect(self.image,DARKBLUE,pg.Rect(90,58+80*i,479,65)) #draw info outline backgroundd
             self.image.blit(pg.transform.rotate(self.ships[i].img,90),(10,58+80*i))
-            self.game.draw_text(self.image,str("ID:"+str(self.ships[i].id)),395,63+80*i,WHITE,15)
+            self.game.draw_text(self.image,str("ID:"+str(self.ships[i].id))+str(int(self.ships[i].x))+str(int(self.ships[i].y)),395,63+80*i,WHITE,15)
             self.image.blit(self.button_image,(95,81+80*i))
 
             #new button stuff
