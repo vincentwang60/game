@@ -42,12 +42,17 @@ class info_box(pg.sprite.Sprite):
         self.top_button_image = self.game.top_buttons
         self.buttons = []
         self.top_buttons = []
+        self.icon = []
         'END OF VARIABLEs'
 
         for ship in ship_list:
             if ship.selected:
                 self.ships.append(ship)
 
+        self.f1_beam_img = self.game.f1_beam.copy()
+        self.f1_capital_img = self.game.f1_capital.copy()
+        self.f1_beam_img = pg.transform.scale(self.f1_beam_img,(68,68))
+        self.f1_capital_img = pg.transform.scale(self.f1_capital_img,(68,34))
         self.total_h = 80 * len(self.ships)
         #STATIC DRAWINGS (outline boxes, ship images, buttons) THIS WILL ONLY UPDATE WITH A NEW SHIP ADDITION
         self.image.blit(self.top_button_image,(0,0))
@@ -56,8 +61,11 @@ class info_box(pg.sprite.Sprite):
             pg.draw.rect(self.image,DARKBLUE,pg.Rect(10,58+80*i,65,65)) #draw ship outline background
             pg.draw.rect(self.image,BLUE3,pg.Rect(88,56+80*i,482,68),2) #draw info outline box
             pg.draw.rect(self.image,DARKBLUE,pg.Rect(90,58+80*i,479,65)) #draw info outline backgroundd
-            self.image.blit(pg.transform.rotate(self.ships[i].img,90),(10,58+80*i))
-            self.game.draw_text(self.image,str("ID:"+str(self.ships[i].id))+str(int(self.ships[i].x))+str(int(self.ships[i].y)),395,63+80*i,WHITE,15)
+            if self.ships[i].img_string == 'f1_beam':
+                self.image.blit(pg.transform.rotate(self.f1_beam_img,90),(10,58+80*i))
+            else:
+                self.image.blit(pg.transform.rotate(self.f1_capital_img,90),(10,58+80*i))
+            self.game.draw_text(self.image,str("ID:"+str(self.ships[i].id)),395,63+80*i,WHITE,15)
             self.image.blit(self.button_image,(95,81+80*i))
 
             #new button stuff

@@ -69,6 +69,8 @@ class Game:
         for i in range(10):
             self.s = ship(self,200+20*i,200,i+200,'f1_beam')
 
+        self.s = ship(self,500,200,200,'f1_capital')
+
         #enemies created
         ship(self,200,600,200,'f2_beam',1,True)
         for i in range(1,10):

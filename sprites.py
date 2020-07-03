@@ -181,9 +181,11 @@ class ship(pg.sprite.Sprite):
         self.range = BEAM_RANGE
         self.dmg = 10
         self.dying_tick = 0
-        self.fleet = fleet
-        self.leader = leader
+        self.fleet = fleet #for enemy ships
+        self.leader = leader #for enemy ships
         self.fired = False #keeps track of if its fired for the first time
+        self.target_ship_id = 0
+        self.img_string = img_string
 
         self.task = 'IGNORE' #what its goal is
         self.state = 'Idle' #what its currently doing
@@ -192,10 +194,12 @@ class ship(pg.sprite.Sprite):
             self.img = game.f1_beam
             self.groups = [game.ally_ships,game.all_sprites]
         elif img_string == 'f2_beam': #enemies
+            self.dmg = 1
             self.scale = 1
             self.img = game.f2_beam
             self.groups = [game.enemy_ships,game.all_sprites]
         elif img_string == 'f1_capital':
+            self.scale = 1
             self.img = game.f1_capital
             self.groups = [game.ally_ships,game.all_sprites]
         self.attack_target_pos = [0,0]
@@ -233,7 +237,8 @@ class ship(pg.sprite.Sprite):
             #if firing, return damage and target
             return [self.dmg,self.attack_target]
         elif self.reload_tick < BEAM_DURATION and self.fired:
-            self.reload_tick += 1
+            if not self.game.paused:
+                self.reload_tick += 1
             return [0,self.attack_target]
         else: #if its not drawing its beam, resets fired to false
             self.fired = False
@@ -300,6 +305,10 @@ class ship(pg.sprite.Sprite):
         self.image = merged
 
     def make_line(self,color=(255,0,0)):
+        if self.target_ship_id != 0: #if no forced target
+            for ship in self.game.enemy_ships:
+                if ship.id == self.target_ship_id:
+                    return [(self.x,self.y),(ship.x,ship.y)]
         return [(self.x,self.y),(self.destx,self.desty)]
 
     def set_target_angle(self,target):

@@ -35,15 +35,26 @@ class ship_mngr(): #issues move commands to ships
         self.selected = (x for x in self.ally_ships if (x.selected)) #list of selected ships
 
     def r_click(self,mouse_pos): #handles if user right clicks
+        clicked_enemy = False
         selected_list = []
         for ship in self.selected:
             selected_list.append(ship)
-        self.make_lists()
-        targets = self.move_formation(len(selected_list),30,mouse_pos[0],mouse_pos[1]) #make list of target dests
-        for i in range(len(selected_list)):
-            target = self.game.camera.apply_point(targets[i])
-            selected_list[i].set_dest(target)
-            selected_list[i].state = 'Moving to position'
+        'if r-clicks an enemy, set it as the selected ships target'
+        for ship in self.enemy_ships:
+            if ship.rect.collidepoint(self.game.camera.apply_point(mouse_pos)): #if you right click an enemy ship
+                clicked_enemy = True
+                for ally_ship in selected_list:
+                    ally_ship.target_ship_id = ship.id
+                    ally_ship.task = 'ATTACK'
+
+        if not clicked_enemy:
+            'moves selected ally ships in a formation to wherever is clicked'
+            self.make_lists()
+            targets = self.move_formation(len(selected_list),30,mouse_pos[0],mouse_pos[1]) #make list of target dests
+            for i in range(len(selected_list)):
+                target = self.game.camera.apply_point(targets[i])
+                selected_list[i].set_dest(target)
+                selected_list[i].state = 'Moving to position'
 
     def find_closest(self,start_ship,start_team):
         closest = 9999
@@ -137,7 +148,15 @@ class ship_mngr(): #issues move commands to ships
                 ship.state = 'Moving to target'
                 moving_list.append(ship)
         for i in range(len(moving_list)):
+            #override target if right clicked
             target_ship = self.find_closest(moving_list[i],True)
+            for enemy_ship in self.enemy_ships:
+                if enemy_ship.id == moving_list[i].target_ship_id:
+                    if enemy_ship.alive: #if target is killed, reset it to 0
+                        target_ship = enemy_ship
+                    else:
+                        moving_list[i].target_ship_id = 0
+
             target  = self.move_attack_formation(i,self.separation/2,target_ship.x,target_ship.y) #create targets when attacking
             distance = self.distance((moving_list[i].x,moving_list[i].y),(target_ship.x,target_ship.y)) #distance from ally ship to enemy
             if distance > moving_list[i].range:
