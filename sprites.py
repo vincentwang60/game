@@ -305,10 +305,10 @@ class ship(pg.sprite.Sprite):
         self.image = merged
 
     def make_line(self,color=(255,0,0)):
-        if self.target_ship_id != 0: #if no forced target
+        if self.target_ship_id != 0 and self.state != "Moving to position": #if there is a forced target and no r-click order
             for ship in self.game.enemy_ships:
                 if ship.id == self.target_ship_id:
-                    return [(self.x,self.y),(ship.x,ship.y)]
+                    return [(self.x,self.y),(ship.x,ship.y)] #draws line to enemy ship\
         return [(self.x,self.y),(self.destx,self.desty)]
 
     def set_target_angle(self,target):

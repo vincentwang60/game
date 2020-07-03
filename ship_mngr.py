@@ -46,6 +46,7 @@ class ship_mngr(): #issues move commands to ships
                 for ally_ship in selected_list:
                     ally_ship.target_ship_id = ship.id
                     ally_ship.task = 'ATTACK'
+                    ally_ship.state = 'idle'
 
         if not clicked_enemy:
             'moves selected ally ships in a formation to wherever is clicked'
