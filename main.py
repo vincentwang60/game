@@ -68,8 +68,13 @@ class Game:
 
         for i in range(10):
             self.s = ship(self,200+20*i,200,i+200,'f1_beam')
-        for i in range(10):
-            self.s = ship(self,200+20*i,600,i+200,'f2_beam')
+
+        #enemies created
+        ship(self,200,600,200,'f2_beam',1,True)
+        for i in range(1,10):
+            self.s = ship(self,200+20*i,600,i+200,'f2_beam',1,False)
+        self.enemy_fleets = [1] #list of enemy groups (fleets)
+
         self.box = select_box(self)
         self.map = g_map(self)
         self.bg = bg(self)

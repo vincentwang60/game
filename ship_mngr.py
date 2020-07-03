@@ -77,16 +77,37 @@ class ship_mngr(): #issues move commands to ships
     def update(self):
         random.seed()
         'ENEMY SHIP AI'
-        for ship in self.enemy_ships:
-            ship.set_dest((ship.x+-50+random.randrange(100),ship.y-50+random.randrange(100)))
-            if ship.x < 0:
-                ship.set_dest((1000,500))
-            if ship.x > 2000:
-                ship.set_dest((1000,500))
-            if ship.y < -500:
-                ship.set_dest((1000,500))
-            if ship.y > 1500:
-                ship.set_dest((1000,500))
+        for fleet in self.game.enemy_fleets: #creates all enemy fleets
+            fleet_list = []
+            fleet_leader = ''
+            leader_found = False
+            for ship in self.enemy_ships: #creates the fleet list
+                if ship.fleet == fleet:
+                    fleet_list.append(ship)
+                    if ship.leader: #sets the leader of the fleet
+                        fleet_leader = ship
+                        leader_found = True
+            if not leader_found:
+                fleet_list[0].leader = True
+                fleet_leader = fleet_list[0]
+
+            targets = self.move_enemy_circle(len(fleet_list)-1,100,tuple((fleet_leader.x,fleet_leader.y)))
+            target_index = 0
+            for i in range(len(fleet_list)):
+                if not fleet_list[i].leader: #if its a regular ship
+                    fleet_list[i].set_dest(targets[target_index])
+                    target_index += 1
+
+            fleet_leader.set_dest((fleet_leader.x+-50+random.randrange(100),fleet_leader.y-50+random.randrange(100)))
+            if fleet_leader.x < 0:
+                fleet_leader.set_dest((1000,500))
+            if fleet_leader.x > 2000:
+                fleet_leader.set_dest((1000,500))
+            if fleet_leader.y < -500:
+                fleet_leader.set_dest((1000,500))
+            if fleet_leader.y > 1500:
+                fleet_leader.set_dest((1000,500))
+
         self.make_lists()
         'ALLIED ATTACK'
         moving_list = [] #list of ships that are attacking
@@ -115,6 +136,17 @@ class ship_mngr(): #issues move commands to ships
                 moving_list[i].state = 'Aiming at target'
                 moving_list[i].set_target_angle((target_ship.x,target_ship.y))
                 moving_list[i].set_dest((moving_list[i].x,moving_list[i].y))
+
+    def move_enemy_circle(self,number,separation,leader_pos):
+        output = []
+        if number > 0:
+            angle = 360/number
+        else:
+            angle = 0
+        for i in range(number):
+            rad_angle = angle*i*np.pi/180
+            output.append(tuple((leader_pos[0]+separation*np.cos(rad_angle),leader_pos[1]+separation*np.sin(rad_angle))))
+        return output
 
     def move_attack_formation(self,seed,separation,destx,desty):
         random.seed(seed*1000)

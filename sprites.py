@@ -160,7 +160,7 @@ class health_bar(pg.sprite.Sprite):
         self.rect.y = self.y - 20
 
 class ship(pg.sprite.Sprite):
-    def __init__(self, game, x, y,id,img_string):
+    def __init__(self, game, x, y,id,img_string,fleet = None,leader = False):
         '''ship variables'''
         self.selected = False
         self.in_range = False
@@ -179,8 +179,10 @@ class ship(pg.sprite.Sprite):
         self.reload_delay = 100
         self.reload_tick = 0
         self.range = BEAM_RANGE
-        self.dmg = 5
+        self.dmg = 50
         self.dying_tick = 0
+        self.fleet = fleet
+        self.leader = leader
 
         self.task = 'IGNORE' #what its goal is
         self.state = 'Idle' #what its currently doing
@@ -188,7 +190,7 @@ class ship(pg.sprite.Sprite):
             self.scale = 0.5
             self.img = game.f1_beam
             self.groups = [game.ally_ships,game.all_sprites]
-        elif img_string == 'f2_beam':
+        elif img_string == 'f2_beam': #enemies
             self.scale = 1
             self.img = game.f2_beam
             self.groups = [game.enemy_ships,game.all_sprites]
