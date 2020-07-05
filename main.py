@@ -31,6 +31,8 @@ class Game:
         self.commands = []
         self.delayed_timer = 0
         self.delayed_timer_max = 20
+        self.enemy_exists = False
+        self.map_scroll_vel = 0
         self.states = [False,False,False,False] #contains game variables
 
     def load_data(self): #loads new pngs
@@ -50,6 +52,8 @@ class Game:
         self.buttons = pg.image.load(path.join(img_folder,"buttons.png")).convert_alpha()
         self.f1_capital = pg.image.load(path.join(img_folder,"f1_capital.png")).convert_alpha()
         self.top_buttons = pg.image.load(path.join(img_folder,"top_buttons.png")).convert_alpha()
+        self.pointer = pg.image.load(path.join(img_folder,"point.png")).convert_alpha()
+        self.map_bg = pg.image.load(path.join(img_folder,"map.png")).convert_alpha()
         self.planets = [self.planet1,self.planet2,self.planet3,self.planet4,self.planet5,self.planet6]
 
         ss = spritesheet(path.join(img_folder,"explosion.png"))
@@ -72,10 +76,10 @@ class Game:
         self.s = ship(self,500,200,200,'f1_capital')
 
         #enemies created
-        ship(self,200,600,200,'f2_beam',1,True)
-        for i in range(1,10):
-            self.s = ship(self,200+20*i,600,i+200,'f2_beam',1,False)
-        self.enemy_fleets = [1] #list of enemy groups (fleets)
+        #ship(self,200,600,200,'f2_beam',1,True)
+        #for i in range(1,2):
+        #    self.s = ship(self,200+20*i,600,i+200,'f2_beam',1,False)
+        self.enemy_fleets = [] #list of enemy groups (fleets)
 
         self.box = select_box(self)
         self.map = g_map(self)
@@ -119,6 +123,14 @@ class Game:
     def update(self):
         # update portion of the game loop
         self.mouse_pos = pg.mouse.get_pos()
+        #smooth scrolling
+        if self.map.map_camera.y + self.map_scroll_vel>= 0 and self.map.map_camera.y + self.map_scroll_vel< 2332:
+            self.map.map_camera.y += self.map_scroll_vel
+        if self.map_scroll_vel > 0:
+            self.map_scroll_vel -= 6
+        if self.map_scroll_vel < 0:
+            self.map_scroll_vel += 6
+
         if self.selecting:
             self.selected_area = self.camera.apply_rect(self.box.make_rect())
             for ship in self.ally_ships:
@@ -151,6 +163,7 @@ class Game:
         for i in self.background:
             self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
         #self.background.draw(self.screen)
+        'DRAWS THE THINGS UNDER MAP'
         if not self.map_view:
             for i in self.ally_ships:
                 self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
@@ -159,35 +172,37 @@ class Game:
                     pg.draw.line(self.screen,DARKGREY,self.camera.apply_opp(ship.make_line()[0]),self.camera.apply_opp(ship.make_line()[1]))
             for i in self.enemy_ships:
                 self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
+            for i in self.health_bar:
+                self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
+
+            'DRAW LASERS AND FIRE'
+            for ship in self.ally_ships:
+                if ship.task == 'ATTACK' and ship.in_range and ship.state != 'Moving to position' and self.enemy_exists:
+                    info = ship.fire()
+                    if info !=False: #if it's firing
+                        for enemy_ship in self.enemy_ships:
+                            if enemy_ship.id == info[1]:
+                                enemy_ship.damage(info[0],'beam')
+                        pg.draw.line(self.screen,RED,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
+            'DRAW ENEMY LASER AND FIRE'
+            for ship in self.enemy_ships:
+                if ship.in_range:
+                    info = ship.fire()
+                    if info !=False: #if it's firing
+                        for enemy_ship in self.ally_ships:
+                            if enemy_ship.id == info[1]:
+                                enemy_ship.damage(info[0],'beam')
+                        pg.draw.line(self.screen,BLUE,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
+
+            #DRAWS UI
+            self.ui.draw(self.screen)
+            if self.draw_box:
+                self.screen.blit(self.info_box.image,(self.info_box.x,self.info_box.y))
+
         else:
+            'DRAWS STUFF ON THE MAP'
             self.map_group.draw(self.screen)
-        for i in self.health_bar:
-            self.screen.blit(i.image,(self.camera.apply(i).x,self.camera.apply(i).y))
-
-        'DRAW LASERS AND FIRE'
-        for ship in self.ally_ships:
-            if ship.task == 'ATTACK' and ship.in_range and ship.state != 'Moving to position':
-                info = ship.fire()
-                if info !=False: #if it's firing
-                    for enemy_ship in self.enemy_ships:
-                        if enemy_ship.id == info[1]:
-                            enemy_ship.damage(info[0],'beam')
-                    pg.draw.line(self.screen,RED,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
-        'DRAW ENEMY LASER AND FIRE'
-        for ship in self.enemy_ships:
-            if ship.in_range:
-                info = ship.fire()
-                if info !=False: #if it's firing
-                    for enemy_ship in self.ally_ships:
-                        if enemy_ship.id == info[1]:
-                            enemy_ship.damage(info[0],'beam')
-                    pg.draw.line(self.screen,BLUE,self.camera.apply_opp((ship.x,ship.y)),self.camera.apply_opp((ship.attack_target_pos[0],ship.attack_target_pos[1])),4)
-
-        #DRAWS UI
-        self.ui.draw(self.screen)
-        if self.draw_box:
-            self.screen.blit(self.info_box.image,(self.info_box.x,self.info_box.y))
-        self.draw_text(self.screen,str(self.draw_box),200,100,WHITE,30) #TEXT TEXT TEXT
+            self.draw_text(self.screen,str(self.map.map_camera.y),200,100,WHITE,30) #TEXT TEXT TEXT
         pg.display.flip()
 
     def events(self):
@@ -204,6 +219,7 @@ class Game:
                     self.ship_mngr.print()
                 if event.key == pg.K_m:
                     self.map_view = not self.map_view
+                    self.paused = True
                 if event.key == pg.K_a:
                     self.states[1] = True
                 if event.key == pg.K_w:
@@ -237,6 +253,12 @@ class Game:
                 'RIGHT CLICK'
                 if event.button == 3: #move command
                     self.ship_mngr.r_click(self.mouse_pos)
+                'map scrolling'
+                if self.map_view:
+                    if event.button == 4:
+                        self.map_scroll_vel = -3*SCROLL_SPEED
+                    if event.button == 5:
+                        self.map_scroll_vel = 3*SCROLL_SPEED
             if event.type == pg.MOUSEBUTTONUP:
                 if event.button == 1:
                     if self.selecting:

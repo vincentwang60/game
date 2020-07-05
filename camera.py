@@ -24,6 +24,7 @@ class camera():
         out_x = target[0]+self.state.topleft[0]
         out_y = target[1]+self.state.topleft[1]
         return (out_x,out_y)
+
     def move(self):
         if (self.x > (WIDTH-MAP_SIZE[0])/2 and self.dx < 0) or (self.x < (MAP_SIZE[0]-WIDTH)/2 and self.dx > 0):
             self.x += self.dx

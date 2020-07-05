@@ -13,6 +13,10 @@ DARKBLUE = (12, 36, 97)
 GREY1 = (60, 99, 130)
 BLUE3 = (10, 61, 98)
 
+# map galaxy
+LAYERS = 10
+LAYER_WIDTH = 4
+WORLD_MAP_HEIGHT = 3412
 
 # game settings
 BUTTON_X = 2

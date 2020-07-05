@@ -176,7 +176,7 @@ class ship(pg.sprite.Sprite):
         self.destx = x
         self.desty= y
         self.id = id
-        self.reload_delay = 100
+        self.reload_delay = 10
         self.reload_tick = 0
         self.range = BEAM_RANGE
         self.dmg = 10
