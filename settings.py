@@ -16,7 +16,7 @@ LIGHTBLUE = (106, 137, 204)
 
 # map galaxy
 LAYERS = 10
-LAYER_WIDTH = 4
+LAYER_WIDTH = 6
 WORLD_MAP_HEIGHT = 3412
 
 # game settings

@@ -28,15 +28,19 @@ class g_map(pg.sprite.Sprite):
         self.planet_pos = [] #decided first
         last_column = 0
         columns = 0
+        randomness = 200
 
         self.planet_pos.append([WIDTH/2,-WORLD_MAP_HEIGHT/(2*LAYERS) + (LAYERS)*WORLD_MAP_HEIGHT/LAYERS]) #first planet
+        'FIRST 3 PLANETS'
+        for i in range(3):
+            self.planet_pos.append([960+200*(i -1),-randomness/2+r.randrange(randomness)-WORLD_MAP_HEIGHT/(2*LAYERS) + (LAYERS-1)*WORLD_MAP_HEIGHT/LAYERS]) #first planet
         self.planet_pos.append([WIDTH/2,WORLD_MAP_HEIGHT/(2*LAYERS)]) #last planet
-        for layer in range(2,LAYERS):
+        for layer in range(2,LAYERS-1):
             while columns == last_column:
-                columns = r.randrange(2,LAYER_WIDTH+1)
+                columns = r.randrange(4,LAYER_WIDTH+1)
             last_column = columns
             for column in range(columns):
-                self.planet_pos.append([960+200*(column - (columns-1)/2),-WORLD_MAP_HEIGHT/(2*LAYERS) + layer*WORLD_MAP_HEIGHT/LAYERS])
+                self.planet_pos.append([960+200*(column - (columns-1)/2),-randomness/2+r.randrange(randomness)-WORLD_MAP_HEIGHT/(2*LAYERS) + layer*WORLD_MAP_HEIGHT/LAYERS])
         for planet_position in self.planet_pos:
             self.planet_imgs.append(self.game.planets[r.randrange(6)].copy())
             self.planet_scales.append(r.uniform(1,2))
