@@ -9,9 +9,10 @@ YELLOW = (255, 255, 0)
 PURPLE = (41,16,38)
 BLUE = (0,0,255)
 BLUE2 = (30, 55, 153)
-DARKBLUE = (12, 36, 97)
+DARKBLUE = (9, 28, 76)
 GREY1 = (60, 99, 130)
 BLUE3 = (10, 61, 98)
+LIGHTBLUE = (106, 137, 204)
 
 # map galaxy
 LAYERS = 10

@@ -127,9 +127,9 @@ class Game:
         if self.map.map_camera.y + self.map_scroll_vel>= 0 and self.map.map_camera.y + self.map_scroll_vel< 2332:
             self.map.map_camera.y += self.map_scroll_vel
         if self.map_scroll_vel > 0:
-            self.map_scroll_vel -= 6
+            self.map_scroll_vel -= 10
         if self.map_scroll_vel < 0:
-            self.map_scroll_vel += 6
+            self.map_scroll_vel += 10
 
         if self.selecting:
             self.selected_area = self.camera.apply_rect(self.box.make_rect())
@@ -241,7 +241,7 @@ class Game:
                 'LEFT CLICK'
                 if event.button == 1:
                     #if theres a box and we click inside it
-                    if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-498):
+                    if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-508):
                         self.info_box.clicked(self.mouse_pos) #tell info box where we clicked
                     else: #if we click in a valid spot in the background
                         self.draw_box = False

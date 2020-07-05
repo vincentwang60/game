@@ -19,6 +19,7 @@ class select_box(pg.sprite.Sprite):
     def set_start(self,x,y):
         self.startx=  x
         self.starty = y
+
     def update(self):
         if self.game.selecting:
             self.mx = self.game.mouse_pos[0]
@@ -26,7 +27,7 @@ class select_box(pg.sprite.Sprite):
             self.image = pg.Surface((abs(self.mx-self.startx), abs(self.my - self.starty)))
             self.rect = self.make_rect()
             self.image.set_colorkey(BLACK)
-            self.image.fill((37,84,199))
+            self.image.fill(LIGHTBLUE)
             self.image.fill(BLACK,pg.Rect(2,2,abs(self.mx-self.startx)-4,abs(self.my-self.starty)-4))
         else:
             self.mx = -1
