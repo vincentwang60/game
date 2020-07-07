@@ -20,7 +20,6 @@ class Game:
         self.clock = pg.time.Clock()
         pg.key.set_repeat(400, 1)
         self.load_data()
-        self.font_name = pg.font.match_font(FONT_NAME)
         self.mouse_pos = pg.mouse.get_pos()
 
         'game variables'
@@ -54,6 +53,7 @@ class Game:
         self.top_buttons = pg.image.load(path.join(img_folder,"top_buttons.png")).convert_alpha()
         self.pointer = pg.image.load(path.join(img_folder,"point.png")).convert_alpha()
         self.map_bg = pg.image.load(path.join(img_folder,"map.png")).convert_alpha()
+        self.paused_img = pg.image.load(path.join(img_folder,'paused.png')).convert_alpha()
         self.planets = [self.planet1,self.planet2,self.planet3,self.planet4,self.planet5,self.planet6]
 
         ss = spritesheet(path.join(img_folder,"explosion.png"))
@@ -70,16 +70,11 @@ class Game:
         self.stars = pg.sprite.Group()
         self.health_bar = pg.sprite.Group()
 
-        for i in range(10):
+        'SPAWN STARTING SHIPS'
+        for i in range(5):
             self.s = ship(self,200+20*i,200,i+200,'f1_beam')
-
         self.s = ship(self,500,200,200,'f1_capital')
-
-        #enemies created
-        #ship(self,200,600,200,'f2_beam',1,True)
-        #for i in range(1,2):
-        #    self.s = ship(self,200+20*i,600,i+200,'f2_beam',1,False)
-        self.enemy_fleets = [] #list of enemy groups (fleets)
+        self.enemy_fleets = []
 
         self.box = select_box(self)
         self.map = g_map(self)
@@ -93,7 +88,21 @@ class Game:
         for i in range(int(STAR_DENSITY * MAP_SIZE[0]*MAP_SIZE[1])):
             star(self) #does all startup activity, creates groups, stars, background
 
-    def run(self): #main game loop, dont touch
+    def warp(self): #if in the map view, clicks next planet
+        self.bg.change(self) #changes background
+        'SPAWN NEW ENEMIES'
+        ship(self,200,600,200,'f2_beam',1,True) #fleet leader
+        for i in range(1,5): #fleet others
+            self.s = ship(self,200+20*i,600,i+200,'f2_beam',1,False)
+        for ally_ship in self.ally_ships:
+            if ally_ship.alive:
+                ally_ship.y = 1900
+                ally_ship.health_bar.health[0] = ally_ship.health_bar.max_health[0]
+                ally_ship.destx = ally_ship.x
+                ally_ship.desty = ally_ship.y
+        self.enemy_fleets = [1] #list of enemy groups (fleets)
+
+    def run(self): #main game loop, dont touchmm
         # game loop - set self.playing = False to end the game
         self.playing = True
         while self.playing:
@@ -117,7 +126,6 @@ class Game:
                 group.remove(ship)
                 del ship
                 self.ship_mngr.refresh_ships(self.ally_ships,self.enemy_ships)
-                print(len(self.ally_ships))
                 self.info_box = info_box(self,self.ally_ships)
 
     def update(self):
@@ -198,11 +206,12 @@ class Game:
             self.ui.draw(self.screen)
             if self.draw_box:
                 self.screen.blit(self.info_box.image,(self.info_box.x,self.info_box.y))
-
+            if self.paused:
+                self.screen.blit(self.paused_img,(755,0))
         else:
             'DRAWS STUFF ON THE MAP'
             self.map_group.draw(self.screen)
-            self.draw_text(self.screen,str(self.map.map_camera.y),200,100,WHITE,30) #TEXT TEXT TEXT
+            #self.draw_text(self.screen,str(self.map.map_camera.y),200,100,WHITE,30) #TEXT TEXT TEXT
         pg.display.flip()
 
     def events(self):
@@ -240,16 +249,20 @@ class Game:
             if event.type == pg.MOUSEBUTTONDOWN:
                 'LEFT CLICK'
                 if event.button == 1:
-                    #if theres a box and we click inside it
-                    if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-508):
-                        self.info_box.clicked(self.mouse_pos) #tell info box where we clicked
-                    else: #if we click in a valid spot in the background
-                        self.draw_box = False
-                        for sprite in self.ally_ships:
-                            sprite.selected = False
-                        self.selecting = True
-                        self.box.set_start(self.mouse_pos[0],self.mouse_pos[1])
-                    self.ship_mngr.l_click(self.mouse_pos)
+                    if self.map_view and not self.enemy_exists:
+                        self.map.clicked(self.mouse_pos)
+                        self.warp()
+                    else:
+                        #if theres a box and we click inside it
+                        if self.draw_box and (self.mouse_pos[0]<600 and self.mouse_pos[1]>HEIGHT-508):
+                            self.info_box.clicked(self.mouse_pos) #tell info box where we clicked
+                        else: #if we click in a valid spot in the background
+                            self.draw_box = False
+                            for sprite in self.ally_ships:
+                                sprite.selected = False
+                            self.selecting = True
+                            self.box.set_start(self.mouse_pos[0],self.mouse_pos[1])
+                        self.ship_mngr.l_click(self.mouse_pos)
                 'RIGHT CLICK'
                 if event.button == 3: #move command
                     self.ship_mngr.r_click(self.mouse_pos)
@@ -278,7 +291,7 @@ class Game:
         pass
 
     def draw_text(self,surface,text,x,y,color,size):
-        font = pg.font.Font(self.font_name,size)
+        font = pg.font.Font(font_name,size)
         text_surface = font.render(text,True,color)
         text_rect = text_surface.get_rect()
         text_rect.topleft = (x,y)

@@ -86,14 +86,14 @@ class bg(pg.sprite.Sprite):
         self.groups = [game.background,game.all_sprites]
         pg.sprite.Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = self.game.planets[random.randrange(6)]
-        self.image.fill((random.randrange(50), random.randrange(50), random.randrange(50), 100), special_flags=pg.BLEND_SUB)
-        self.image = pg.transform.rotate(self.image,random.randrange(360))
+        self.image = self.game.map.current_planet.original_image
         self.rect = self.image.get_rect()
-        self.rect.centerx = WIDTH/2
-        self.rect.centery = HEIGHT/2
-    def update(self):
-        pass
+        self.rect = self.rect.move((WIDTH-self.rect.w)/2,(HEIGHT-self.rect.h)/2)
+        print(self.rect.x,self.rect.y)
+    def change(self,game):
+        self.image = self.game.map.current_planet.original_image
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move((WIDTH-self.rect.w)/2,(HEIGHT-self.rect.h)/2)
 
 class health_bar(pg.sprite.Sprite):
     def __init__(self,game,x,y,bars):
@@ -138,11 +138,11 @@ class health_bar(pg.sprite.Sprite):
             self.image.blit(temp,(2,2+6))
 
             temp = pg.Surface((self.health_rects[1].w,self.health_rects[1].h))
-            temp.fill((255,215,0))
+            temp.fill(HULL_COLOR)
             self.image.blit(temp,(2,2+6*2))
         else:
             temp = pg.Surface((self.health_rects[1].w,self.health_rects[1].h))
-            temp.fill((255,215,0))
+            temp.fill(HULL_COLOR)
             self.image.blit(temp,(2,2+6))
 
 
@@ -177,7 +177,7 @@ class ship(pg.sprite.Sprite):
         self.destx = x
         self.desty= y
         self.id = id
-        self.reload_delay = 10
+        self.reload_delay = 100
         self.reload_tick = 0
         self.range = BEAM_RANGE
         self.dmg = 10
@@ -188,6 +188,10 @@ class ship(pg.sprite.Sprite):
         self.target_ship_id = 0
         self.img_string = img_string
 
+        self.regen_speed = 3
+        self.regen_delay = 100
+        self.regen_tick = 0
+
         self.task = 'IGNORE' #what its goal is
         self.state = 'Idle' #what its currently doing
         if img_string == 'f1_beam': #self. img = original image
@@ -195,7 +199,7 @@ class ship(pg.sprite.Sprite):
             self.img = game.f1_beam
             self.groups = [game.ally_ships,game.all_sprites]
         elif img_string == 'f2_beam': #enemies
-            self.dmg = 1
+            self.dmg = 5
             self.scale = 1
             self.img = game.f2_beam
             self.groups = [game.enemy_ships,game.all_sprites]
@@ -219,8 +223,12 @@ class ship(pg.sprite.Sprite):
 
     def damage(self,dmg,dmg_type):
         if not self.game.paused:
+            damage = dmg
             if self.health_bar.health[0]>0: #shields
+                damage -= self.health_bar.health[0]
                 self.health_bar.health[0] -= 2*dmg
+                if damage > 0: #shot that kills shields
+                    self.health_bar.health[1] -= damage
             elif self.health_bar.health[1]>0: #hull
                 self.health_bar.health[1] -= dmg
                 self.health_bar.health[2] -= dmg
@@ -228,7 +236,9 @@ class ship(pg.sprite.Sprite):
                 self.health_bar.health[2] -= dmg
             if self.health_bar.health[1] <= 0:
                 self.kill()
-
+        for i in range(len(self.health_bar.health)):
+            if self.health_bar.health[i] < 0:
+                self.health_bar.health[i]=0
 
     def fire(self):
         if self.reload_tick == self.reload_delay: #fire if not reloading once it reaches top

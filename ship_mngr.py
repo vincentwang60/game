@@ -135,7 +135,6 @@ class ship_mngr(): #issues move commands to ships
         'enemy attacking'
         for i in range(len(self.enemy_ships)):
             target_ship = self.find_closest(self.enemy_ships[i],False)
-            print('target_ship:',target_ship.id,target_ship.x,target_ship.y)
             distance = self.distance((self.enemy_ships[i].x,self.enemy_ships[i].y),(target_ship.x,target_ship.y)) #distance from ally ship to enemy
             pg.draw.rect(self.game.screen,WHITE,pg.Rect(10,10,10,10))
             if distance < self.enemy_ships[i].range:
