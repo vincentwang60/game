@@ -272,7 +272,7 @@ class ship(pg.sprite.Sprite):
             self.x += self.vel*self.game.dt*np.cos(np.pi*self.angle/180)
             self.y += -self.vel*self.game.dt*np.sin(np.pi*self.angle/180)
             self.target_angle = self.get_target_angle()
-        elif self.task != 'ATTACK' or self.state == 'Moving to position':
+        elif (self.task != 'ATTACK' or self.state == 'Moving to position') and self.task != 'HOLD':
             self.state = 'Idle'
 
         if abs(self.target_angle-self.angle)>5: #unsatisfied with angle

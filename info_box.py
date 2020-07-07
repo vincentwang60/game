@@ -71,7 +71,7 @@ class info_box(pg.sprite.Sprite):
             'DRAW BUTTONS'
             new_button = button('ATTACK',self.game,97+(BUTTON_W)*0,87+80*i+(BUTTON_H)*0,BUTTON_W,BUTTON_H,self.ships[i].id)
             self.buttons.append(new_button)
-            new_button = button('EVADE',self.game,97+(BUTTON_W)*1,87+80*i+(BUTTON_H)*0,BUTTON_W,BUTTON_H,self.ships[i].id)
+            new_button = button('HOLD',self.game,97+(BUTTON_W)*1,87+80*i+(BUTTON_H)*0,BUTTON_W,BUTTON_H,self.ships[i].id)
             self.buttons.append(new_button)
             new_button = button('IGNORE',self.game,97+(BUTTON_W)*0,87+80*i+(BUTTON_H)*1,BUTTON_W,BUTTON_H,self.ships[i].id)
             self.buttons.append(new_button)
@@ -79,14 +79,14 @@ class info_box(pg.sprite.Sprite):
             self.buttons.append(new_button)
 
             'DRAW HEALTH BAR TEXT'
-            self.game.draw_text(self.image,"Shields:",250,81+80*i,WHITE,15)
-            self.game.draw_text(self.image,"Hull:",250,101+80*i,WHITE,15)
+            self.game.draw_text(self.image,"Shields:",288,81+80*i,WHITE,15)
+            self.game.draw_text(self.image,"Hull:",306,101+80*i,WHITE,15)
 
         new_button = button('ALL ATTACK',self.game,4,4,148,40)
         self.top_buttons.append(new_button)
         new_button = button('ALL IGNORE',self.game,152,4,148,40)
         self.top_buttons.append(new_button)
-        new_button = button('ALL EVADE',self.game,300,4,148,40)
+        new_button = button('ALL HOLD',self.game,300,4,148,40)
         self.top_buttons.append(new_button)
         new_button = button('ALL RETREAT',self.game,448,4,148,40)
         self.top_buttons.append(new_button)

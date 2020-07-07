@@ -29,7 +29,7 @@ class ship_mngr(): #issues move commands to ships
 
     def make_lists(self):
         self.attacking = (x for x in self.ally_ships if (x.selected and x.task == 'ATTACK')) #list of ships that are selected & attacking
-        self.evading = (x for x in self.ally_ships if (x.selected and x.task == 'EVADE')) #list of ships that are selected & evading
+        self.evading = (x for x in self.ally_ships if (x.selected and x.task == 'HOLD')) #list of ships that are selected & evading
         self.ignoring = (x for x in self.ally_ships if (x.selected and x.task == 'IGNORE')) #list of ships that are selected & ignoring
         self.retreating = (x for x in self.ally_ships if (x.selected and x.task == 'RETREAT')) #list of ships that are selected & retreating
         self.selected = (x for x in self.ally_ships if (x.selected)) #list of selected ships
@@ -146,12 +146,18 @@ class ship_mngr(): #issues move commands to ships
                 self.enemy_ships[i].in_range = False
 
         self.make_lists()
-        'ALLIED ATTACK'
-        if len(self.enemy_ships) > 0:
+        'ALLIED SHIP AI'
+        '-----------HOLD-----------'
+        for ship in self.ally_ships:
+            if ship.task == 'HOLD':
+                ship.destx = ship.x #stop moving
+                ship.desty = ship.y
+                ship.state = 'Holding'
+        if len(self.enemy_ships) > 0: #if there are enemy ships left
             self.game.enemy_exists = True
             moving_list = [] #list of ships that are attacking
             for ship in self.ally_ships:
-                if ship.task == 'ATTACK' and ship.state != 'Moving to position': #if ship is attacking and not forced moving, follow the nearest enemy
+                if (ship.task == 'ATTACK' or ship.task == 'RETREAT') and ship.state != 'Moving to position': #if ship is attacking and not forced moving, follow the nearest enemy
                     ship.state = 'Moving to target'
                     moving_list.append(ship)
             for i in range(len(moving_list)):
@@ -163,26 +169,33 @@ class ship_mngr(): #issues move commands to ships
                             target_ship = enemy_ship
                         else:
                             moving_list[i].target_ship_id = 0
-
-                target  = self.move_attack_formation(i,self.separation/2,target_ship.x,target_ship.y) #create targets when attacking
-                distance = self.distance((moving_list[i].x,moving_list[i].y),(target_ship.x,target_ship.y)) #distance from ally ship to enemy
-                if distance > moving_list[i].range:
-                    moving_list[i].in_range = False #if out of range
-                else:
-                    moving_list[i].in_range = True
-                    moving_list[i].attack_target_pos[0] = target_ship.x#set attack targets
-                    moving_list[i].attack_target_pos[1] = target_ship.y
-                    moving_list[i].attack_target = target_ship.id
-                if distance>self.separation: #if out of range, move within range
-                    moving_list[i].state = 'Moving within range'
-                    moving_list[i].set_dest(target)
-                elif distance < self.close_separation: #if it's too close
-                    moving_list[i].state = 'Moving away'
-                    moving_list[i].set_dest((moving_list[i].x-(target_ship.x-moving_list[i].x),moving_list[i].y-(target_ship.y-moving_list[i].y)))
-                else: #if it's in its happy place
-                    moving_list[i].state = 'Aiming at target'
-                    moving_list[i].set_target_angle((target_ship.x,target_ship.y))
-                    moving_list[i].set_dest((moving_list[i].x,moving_list[i].y))
+                '-----------RETREAT-----------'
+                if moving_list[i].task == 'RETREAT':
+                    distance = self.distance((moving_list[i].x,moving_list[i].y),(target_ship.x,target_ship.y)) #distance from ally ship to enemy
+                    moving_list[i].state = 'Retreating'
+                    if distance < 500:
+                        moving_list[i].set_dest((moving_list[i].x-(target_ship.x-moving_list[i].x),moving_list[i].y-(target_ship.y-moving_list[i].y)))
+                elif moving_list[i].task == 'ATTACK':
+                    '-----------ATTACK-----------'
+                    target  = self.move_attack_formation(i,self.separation/2,target_ship.x,target_ship.y) #create targets when attacking
+                    distance = self.distance((moving_list[i].x,moving_list[i].y),(target_ship.x,target_ship.y)) #distance from ally ship to enemy
+                    if distance > moving_list[i].range:
+                        moving_list[i].in_range = False #if out of range
+                    else:
+                        moving_list[i].in_range = True
+                        moving_list[i].attack_target_pos[0] = target_ship.x#set attack targets
+                        moving_list[i].attack_target_pos[1] = target_ship.y
+                        moving_list[i].attack_target = target_ship.id
+                    if distance>self.separation: #if out of range, move within range
+                        moving_list[i].state = 'Moving within range'
+                        moving_list[i].set_dest(target)
+                    elif distance < self.close_separation: #if it's too close
+                        moving_list[i].state = 'Moving away'
+                        moving_list[i].set_dest((moving_list[i].x-(target_ship.x-moving_list[i].x),moving_list[i].y-(target_ship.y-moving_list[i].y)))
+                    else: #if it's in its happy place
+                        moving_list[i].state = 'Aiming at target'
+                        moving_list[i].set_target_angle((target_ship.x,target_ship.y))
+                        moving_list[i].set_dest((moving_list[i].x,moving_list[i].y))
         else: #if there are no enemy ships left
             for ship in self.game.ally_ships:
                 self.state = 'Idle'
